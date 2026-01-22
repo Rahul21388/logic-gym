@@ -1,65 +1,234 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useState } from "react";
+import Link from "next/link";
+import React from "react";
+
+export default function HomePage() {
+  const [darkMode, setDarkMode] = useState(true);
+  const theme = darkMode ? dark : light;
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <main style={{ ...styles.container, background: theme.bg, color: theme.text }}>
+      {/* Header */}
+      <header style={styles.header}>
+        <div>
+          <h1 style={styles.title}>Logic Gym</h1>
+          <p style={{ ...styles.subtitle, color: theme.subtext }}>
+            Train your brain with pure logic puzzles
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        <button
+          onClick={() => setDarkMode(!darkMode)}
+          style={{ ...styles.themeToggle, background: theme.card }}
+        >
+          {darkMode ? "☀️" : "🌙"}
+        </button>
+      </header>
+
+      {/* Featured Games */}
+      <section style={styles.section}>
+        <h2 style={styles.sectionTitle}>Featured Games</h2>
+
+        <div style={styles.grid}>
+          {FEATURED.map((game) => (
+            <div key={game.title} style={{ ...styles.card, background: theme.card }}>
+              <div style={styles.cardHeader}>
+                <span style={styles.icon}>{game.icon}</span>
+                <h3>{game.title}</h3>
+              </div>
+              <p style={{ color: theme.subtext }}>{game.desc}</p>
+
+              {game.link ? (
+                <Link href={game.link} style={styles.playButton}>
+                  Play →
+                </Link>
+              ) : (
+                <span style={styles.comingSoon}>Coming Soon</span>
+              )}
+            </div>
+          ))}
         </div>
-      </main>
-    </div>
+      </section>
+
+      {/* Logic Gym */}
+      <section style={styles.section}>
+        <h2 style={styles.sectionTitle}>Logic Gym</h2>
+
+        <div style={styles.grid}>
+          {LOGIC_GYM.map((game) => (
+            <div key={game.title} style={{ ...styles.card, background: theme.card }}>
+              <div style={styles.cardHeader}>
+                <span style={styles.icon}>{game.icon}</span>
+                <h3>{game.title}</h3>
+              </div>
+              <p style={{ color: theme.subtext }}>{game.desc}</p>
+
+              {game.link ? (
+                <Link href={game.link} style={styles.playButton}>
+                  Play →
+                </Link>
+              ) : (
+                <span style={styles.comingSoon}>Coming Soon</span>
+              )}
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <footer style={{ ...styles.footer, color: theme.subtext }}>
+        Built by Rahul · Logic Gym
+      </footer>
+    </main>
   );
 }
+
+/* ================= DATA ================= */
+
+const FEATURED = [
+  {
+    title: "Tic Tac Toe",
+    icon: "❌⭕",
+    desc: "Classic 1v1 or vs AI",
+    link: "/tic-tac-toe",
+  },
+  {
+    title: "Rock Paper Scissors",
+    icon: "✊✋✌️",
+    desc: "Quick matches. Solo or with friends.",
+    link: "/rock-paper-scissors",
+  },
+  {
+    title: "2048",
+    icon: "🔢",
+    desc: "Slide tiles and reach 2048.",
+    link: "/2048",
+  },
+  {
+    title: "Memory Match",
+    icon: "🧠",
+    desc: "Train your memory by matching cards.",
+    link: "/memory-match",
+  },
+];
+
+const LOGIC_GYM = [
+  {
+    title: "Hitori",
+    icon: "🧩",
+    desc: "Shade cells to remove duplicates",
+    link: "/hitori",
+  },
+  {
+    title: "Nurikabe",
+    icon: "🏝️",
+    desc: "Create islands of correct size",
+    link: "/nurikabe",
+  },
+  {
+    title: "Bridges",
+    icon: "🌉",
+    desc: "Connect islands with bridges",
+    link: "/bridges",
+  },
+  {
+    title: "Slitherlink",
+    icon: "🔗",
+    desc: "Draw a single closed loop",
+    link: "/slitherlink",
+  },
+];
+
+/* ================= THEMES ================= */
+
+const dark = {
+  bg: "radial-gradient(circle at top, #020617, #000)",
+  card: "rgba(15,23,42,0.85)",
+  text: "#f8fafc",
+  subtext: "rgba(248,250,252,0.65)",
+};
+
+const light = {
+  bg: "#f8fafc",
+  card: "#ffffff",
+  text: "#020617",
+  subtext: "rgba(2,6,23,0.65)",
+};
+
+/* ================= STYLES ================= */
+
+const styles: Record<string, React.CSSProperties> = {
+  container: {
+    minHeight: "100vh",
+    padding: "2rem",
+    fontFamily: "system-ui, sans-serif",
+  },
+  header: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: "2.5rem",
+  },
+  title: {
+    fontSize: "2.4rem",
+    marginBottom: "0.3rem",
+  },
+  subtitle: {
+    fontSize: "0.95rem",
+  },
+  themeToggle: {
+    fontSize: "1.2rem",
+    padding: "0.5rem 0.7rem",
+    borderRadius: "50%",
+    border: "1px solid #334155",
+    cursor: "pointer",
+  },
+  section: {
+    marginBottom: "3rem",
+  },
+  sectionTitle: {
+    fontSize: "1.5rem",
+    marginBottom: "1rem",
+  },
+  grid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+    gap: "1.5rem",
+  },
+  card: {
+    border: "1px solid rgba(148,163,184,0.25)",
+    borderRadius: "18px",
+    padding: "1.5rem",
+  },
+  cardHeader: {
+    display: "flex",
+    alignItems: "center",
+    gap: "0.6rem",
+    marginBottom: "0.5rem",
+  },
+  icon: {
+    fontSize: "1.6rem",
+  },
+  playButton: {
+    display: "inline-block",
+    marginTop: "1rem",
+    padding: "0.45rem 0.9rem",
+    borderRadius: "8px",
+    background: "#22c55e",
+    color: "#020617",
+    textDecoration: "none",
+    fontWeight: 600,
+  },
+  comingSoon: {
+    display: "inline-block",
+    marginTop: "1rem",
+    fontSize: "0.85rem",
+    opacity: 0.6,
+  },
+  footer: {
+    marginTop: "4rem",
+    textAlign: "center",
+    fontSize: "0.85rem",
+  },
+};
