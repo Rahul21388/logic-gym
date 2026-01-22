@@ -1,212 +1,109 @@
-'use client';
-
-import { useEffect, useState } from 'react';
+// app/2048/page.tsx
 import Link from 'next/link';
-
-type Grid = number[][];
-
-const SIZE = 4;
-
-function emptyGrid(): Grid {
-  return Array.from({ length: SIZE }, () => Array(SIZE).fill(0));
-}
-
-function addRandomTile(grid: Grid): Grid {
-  const empty: [number, number][] = [];
-  grid.forEach((row, r) =>
-    row.forEach((cell, c) => {
-      if (cell === 0) empty.push([r, c]);
-    })
-  );
-
-  if (empty.length === 0) return grid;
-
-  const [r, c] = empty[Math.floor(Math.random() * empty.length)];
-  const newGrid = grid.map(row => [...row]);
-  newGrid[r][c] = Math.random() < 0.9 ? 2 : 4;
-  return newGrid;
-}
-
-function slide(row: number[]) {
-  const filtered = row.filter(n => n !== 0);
-  for (let i = 0; i < filtered.length - 1; i++) {
-    if (filtered[i] === filtered[i + 1]) {
-      filtered[i] *= 2;
-      filtered[i + 1] = 0;
-    }
-  }
-  const result = filtered.filter(n => n !== 0);
-  while (result.length < SIZE) result.push(0);
-  return result;
-}
-
-function moveLeft(grid: Grid) {
-  return grid.map(slide);
-}
-
-function rotate(grid: Grid): Grid {
-  return grid[0].map((_, i) => grid.map(row => row[i]).reverse());
-}
-
-function move(grid: Grid, dir: 'left' | 'right' | 'up' | 'down') {
-  let newGrid = grid.map(row => [...row]);
-
-  if (dir === 'left') newGrid = moveLeft(newGrid);
-  if (dir === 'right') newGrid = moveLeft(newGrid.map(r => r.reverse())).map(r => r.reverse());
-  if (dir === 'up') newGrid = rotate(moveLeft(rotate(newGrid)));
-  if (dir === 'down') newGrid = rotate(rotate(moveLeft(rotate(rotate(newGrid)))));
-
-  return newGrid;
-}
-
-function gridsEqual(a: Grid, b: Grid) {
-  return JSON.stringify(a) === JSON.stringify(b);
-}
+import Game2048 from './Game2048';
 
 export default function Game2048Page() {
-  const [grid, setGrid] = useState<Grid>(() => addRandomTile(addRandomTile(emptyGrid())));
-  const [gameOver, setGameOver] = useState(false);
-
-  function handleMove(dir: 'left' | 'right' | 'up' | 'down') {
-    if (gameOver) return;
-
-    const moved = move(grid, dir);
-    if (gridsEqual(grid, moved)) return;
-
-    const withTile = addRandomTile(moved);
-    setGrid(withTile);
-
-    if (!hasMoves(withTile)) setGameOver(true);
-  }
-
-  function hasMoves(grid: Grid) {
-    for (const dir of ['left', 'right', 'up', 'down'] as const) {
-      if (!gridsEqual(grid, move(grid, dir))) return true;
-    }
-    return false;
-  }
-
-  function reset() {
-    setGrid(addRandomTile(addRandomTile(emptyGrid())));
-    setGameOver(false);
-  }
-
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (e.key === 'ArrowLeft') handleMove('left');
-      if (e.key === 'ArrowRight') handleMove('right');
-      if (e.key === 'ArrowUp') handleMove('up');
-      if (e.key === 'ArrowDown') handleMove('down');
-    }
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  });
-
   return (
-    <main style={styles.page}>
-      <header style={styles.header}>
-        <Link href="/" style={styles.back}>← Back to Home</Link>
-        <h1 style={styles.title}>2048</h1>
-        <p style={styles.subtitle}>Slide tiles and reach 2048</p>
-      </header>
+    <main className="min-h-screen bg-[#050d1a] text-white px-4 md:px-10 py-8">
+      <Link
+        href="/"
+        className="mb-8 inline-flex items-center gap-2 text-green-400 hover:text-green-300 transition-colors duration-200"
+      >
+        <span>←</span>
+        <span>Back to home</span>
+      </Link>
 
-      <section style={styles.board}>
-        {grid.map((row, r) =>
-          row.map((cell, c) => (
-            <div key={`${r}-${c}`} style={{ ...styles.cell, ...tileStyle(cell) }}>
-              {cell !== 0 && cell}
+      <div className="mx-auto max-w-6xl space-y-10">
+        {/* Header */}
+        <header className="space-y-3">
+          <h1 className="text-3xl md:text-5xl font-bold text-green-400">
+            2048
+          </h1>
+          <p className="text-slate-300 text-base md:text-lg max-w-2xl">
+            Slide numbered tiles on a 4×4 grid to merge them and create the 2048
+            tile. Every move adds a new tile, so plan ahead to avoid running out
+            of space.
+          </p>
+        </header>
+
+        <section className="grid gap-10 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] items-start">
+          {/* Game */}
+          <div className="flex justify-center">
+            <Game2048 />
+          </div>
+
+          {/* Explanation */}
+          <aside className="space-y-6 rounded-2xl bg-[#071022] p-5 md:p-7 border border-slate-800/80">
+            <div className="space-y-2">
+              <h2 className="text-xl font-semibold text-green-300">
+                What is 2048?
+              </h2>
+              <p className="text-slate-300 text-sm md:text-base">
+                2048 is a single‑player sliding tile game. Combine tiles with
+                the same number by moving them in one of four directions. Each
+                merge doubles the number and adds to your score. [web:55]
+              </p>
             </div>
-          ))
-        )}
-      </section>
 
-      {gameOver && <p style={styles.gameOver}>Game Over ☠️</p>}
+            <div className="space-y-2">
+              <h3 className="text-lg font-semibold text-green-300">
+                How to play
+              </h3>
+              <ol className="list-decimal list-inside space-y-1.5 text-slate-200 text-sm md:text-base">
+                <li>All tiles slide as far as possible in the chosen direction.</li>
+                <li>
+                  When two tiles with the same value collide, they merge into a
+                  single tile with double the value, and that value is added to
+                  your score. [web:55][web:59]
+                </li>
+                <li>
+                  After each move, a new tile (2 or occasionally 4) appears in a
+                  random empty cell. [web:55][web:57]
+                </li>
+                <li>
+                  The game is over when no moves are left; reaching 2048 is the
+                  classic win condition, but you can keep playing for a higher
+                  score. [web:55]
+                </li>
+              </ol>
+            </div>
 
-      <div style={styles.controls}>
-        <button onClick={() => handleMove('up')}>↑</button>
-        <div>
-          <button onClick={() => handleMove('left')}>←</button>
-          <button onClick={() => handleMove('down')}>↓</button>
-          <button onClick={() => handleMove('right')}>→</button>
-        </div>
+            <div className="space-y-2">
+              <h3 className="text-lg font-semibold text-green-300">
+                Controls
+              </h3>
+              <ul className="list-disc list-inside space-y-1.5 text-slate-200 text-sm md:text-base">
+                <li>Desktop: Use the arrow keys to move tiles.</li>
+                <li>Mobile: Swipe up, down, left, or right on the board.</li>
+                <li>
+                  Press <span className="font-semibold">New game</span> to reset
+                  the grid and start again.
+                </li>
+              </ul>
+            </div>
+
+            <div className="space-y-2">
+              <h3 className="text-lg font-semibold text-green-300">
+                Strategy tips
+              </h3>
+              <ul className="list-disc list-inside space-y-1.5 text-slate-200 text-sm md:text-base">
+                <li>
+                  Keep your highest tile in a corner and build around that
+                  corner whenever possible. [web:58]
+                </li>
+                <li>
+                  Avoid random swiping; favour two main directions (e.g. left
+                  and down) and use the others only when necessary. [web:58]
+                </li>
+                <li>
+                  Look two or three moves ahead so new tiles do not block your
+                  large merges.
+                </li>
+              </ul>
+            </div>
+          </aside>
+        </section>
       </div>
-
-      <button style={styles.reset} onClick={reset}>Reset Game</button>
     </main>
   );
-}
-
-/* ---------- Styles ---------- */
-
-const styles: Record<string, React.CSSProperties> = {
-  page: {
-    minHeight: '100vh',
-    background: 'radial-gradient(circle at top, #0b1220, #020617)',
-    color: '#e5e7eb',
-    padding: 40,
-    textAlign: 'center',
-  },
-  header: { marginBottom: 20 },
-  back: { color: '#22c55e', textDecoration: 'none', fontSize: 14 },
-  title: { fontSize: 40 },
-  subtitle: { color: '#9ca3af' },
-  board: {
-    display: 'grid',
-    gridTemplateColumns: `repeat(${SIZE}, 80px)`,
-    gap: 12,
-    justifyContent: 'center',
-    margin: '30px auto',
-  },
-  cell: {
-    width: 80,
-    height: 80,
-    borderRadius: 12,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontSize: 24,
-    fontWeight: 700,
-    background: '#111827',
-  },
-  controls: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 10,
-    alignItems: 'center',
-  },
-  reset: {
-    marginTop: 20,
-    background: '#22c55e',
-    border: 'none',
-    color: '#022c22',
-    padding: '12px 24px',
-    borderRadius: 10,
-    cursor: 'pointer',
-  },
-  gameOver: {
-    color: '#f87171',
-    fontSize: 20,
-    marginTop: 10,
-  },
-};
-
-function tileStyle(value: number): React.CSSProperties {
-  const colors: Record<number, string> = {
-    2: '#1e293b',
-    4: '#334155',
-    8: '#0ea5e9',
-    16: '#22c55e',
-    32: '#a3e635',
-    64: '#facc15',
-    128: '#fb7185',
-    256: '#f472b6',
-    512: '#c084fc',
-    1024: '#818cf8',
-    2048: '#f59e0b',
-  };
-
-  return {
-    background: colors[value] || '#020617',
-    color: value <= 4 ? '#e5e7eb' : '#020617',
-  };
 }
