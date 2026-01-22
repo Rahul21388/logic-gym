@@ -2,152 +2,148 @@
 
 import { useState } from 'react';
 import {
+  GRID_ROWS,
+  GRID_COLS,
   ISLANDS,
-  Island,
   Bridge,
-  canAddBridge,
-  addBridge,
-  removeBridge,
+  findIsland,
+  lineOfSight,
+  toggleBridge,
+  countBridgesForIsland,
   isSolved,
-  getBridgesBetween,
 } from './bridgesLogic';
+
+const cellSize = 52;
 
 export default function BridgesGame() {
   const [bridges, setBridges] = useState<Bridge[]>([]);
-  const [selectedIsland, setSelectedIsland] = useState<Island | null>(null);
+  const [selected, setSelected] = useState<number | null>(null);
 
   const solved = isSolved(bridges);
 
-  const handleIslandClick = (island: Island) => {
-    if (solved) return;
-
-    if (!selectedIsland) {
-      setSelectedIsland(island);
-    } else {
-      if (selectedIsland.id === island.id) {
-        setSelectedIsland(null);
-        return;
-      }
-
-      const existingBridges = getBridgesBetween(bridges, selectedIsland.id, island.id);
-      
-      if (existingBridges.length > 0) {
-        // Remove bridges
-        setBridges(removeBridge(bridges, selectedIsland.id, island.id));
-      } else {
-        // Try to add bridge
-        const newBridges = addBridge(bridges, selectedIsland, island);
-        if (newBridges) {
-          setBridges(newBridges);
-        }
-      }
-      
-      setSelectedIsland(null);
-    }
-  };
-
-  const getIslandStatus = (island: Island): 'correct' | 'error' | 'neutral' => {
-    const connectedBridges = bridges.filter(
-      b => b.from === island.id || b.to === island.id
-    );
-    const totalBridges = connectedBridges.reduce((sum, b) => sum + (b.double ? 2 : 1), 0);
-
-    if (totalBridges === island.required) return 'correct';
-    if (totalBridges > island.required) return 'error';
-    return 'neutral';
-  };
-
   const reset = () => {
     setBridges([]);
-    setSelectedIsland(null);
+    setSelected(null);
   };
 
-  const gridSize = 7;
-  const cellSize = 60;
+  const islandFill = (id: number) => {
+    const total = countBridgesForIsland(bridges, id);
+    const req = ISLANDS.find(i => i.id === id)!.required;
+
+    if (selected === id) return 'bg-blue-500';
+    if (total === req) return 'bg-green-500';
+    if (total > req) return 'bg-red-500';
+    return 'bg-slate-600';
+  };
+
+  const handleClick = (id: number) => {
+    if (selected === null) {
+      setSelected(id);
+      return;
+    }
+
+    if (selected === id) {
+      setSelected(null);
+      return;
+    }
+
+    const a = findIsland(selected);
+    const b = findIsland(id);
+    const orientation = lineOfSight(a, b);
+
+    if (!orientation) {
+      setSelected(id);
+      return;
+    }
+
+    setBridges(prev => toggleBridge(prev, a, b));
+    setSelected(id);
+  };
 
   return (
-    <div className="flex flex-col items-center gap-8">
+    <div className="flex flex-col items-center gap-6">
       {solved && (
-        <div className="rounded-xl border-2 border-green-400/50 bg-green-400/10 px-8 py-4 text-green-400 text-lg font-semibold">
-          ✨ Puzzle Solved — All islands connected!
+        <div className="rounded-xl bg-green-500/15 border border-green-400 px-6 py-3 text-green-300 font-semibold">
+          ✨ Puzzle solved!
         </div>
       )}
 
-      <div className="rounded-2xl bg-[#0a1628] p-10 shadow-2xl">
+      <div className="rounded-2xl bg-[#0a1628] p-5 shadow-xl">
         <div
           className="relative"
-          style={{
-            width: gridSize * cellSize,
-            height: gridSize * cellSize,
-          }}
+          style={{ width: GRID_COLS * cellSize, height: GRID_ROWS * cellSize }}
         >
-          {/* Draw bridges */}
-          <svg
-            className="absolute top-0 left-0 pointer-events-none"
-            width={gridSize * cellSize}
-            height={gridSize * cellSize}
-          >
-            {bridges.map((bridge, idx) => {
-              const fromIsland = ISLANDS.find(i => i.id === bridge.from)!;
-              const toIsland = ISLANDS.find(i => i.id === bridge.to)!;
+          {/* Bridges */}
+          {bridges.map((b, i) => {
+            const a = findIsland(b.from);
+            const c = findIsland(b.to);
 
-              const x1 = fromIsland.col * cellSize + cellSize / 2;
-              const y1 = fromIsland.row * cellSize + cellSize / 2;
-              const x2 = toIsland.col * cellSize + cellSize / 2;
-              const y2 = toIsland.row * cellSize + cellSize / 2;
+            const x1 = a.col * cellSize + cellSize / 2;
+            const y1 = a.row * cellSize + cellSize / 2;
+            const x2 = c.col * cellSize + cellSize / 2;
+            const y2 = c.row * cellSize + cellSize / 2;
 
-              const isHorizontal = fromIsland.row === toIsland.row;
-              const offset = bridge.double ? 3 : 0;
+            const isH = a.row === c.row;
+            const offset = b.count === 2 ? 6 : 0;
 
-              return (
-                <g key={idx}>
-                  <line
-                    x1={x1}
-                    y1={isHorizontal ? y1 - offset : y1}
-                    x2={x2}
-                    y2={isHorizontal ? y2 - offset : y2}
-                    stroke="#22c55e"
-                    strokeWidth="3"
-                    strokeLinecap="round"
+            return (
+              <div key={i}>
+                <div
+                  className="absolute bg-blue-400 rounded-full"
+                  style={
+                    isH
+                      ? {
+                          left: Math.min(x1, x2),
+                          top: y1 - 3 - offset,
+                          width: Math.abs(x1 - x2),
+                          height: 6,
+                        }
+                      : {
+                          left: x1 - 3 - offset,
+                          top: Math.min(y1, y2),
+                          width: 6,
+                          height: Math.abs(y1 - y2),
+                        }
+                  }
+                />
+                {b.count === 2 && (
+                  <div
+                    className="absolute bg-blue-400 rounded-full"
+                    style={
+                      isH
+                        ? {
+                            left: Math.min(x1, x2),
+                            top: y1 + offset,
+                            width: Math.abs(x1 - x2),
+                            height: 6,
+                          }
+                        : {
+                            left: x1 + offset,
+                            top: Math.min(y1, y2),
+                            width: 6,
+                            height: Math.abs(y1 - y2),
+                          }
+                    }
                   />
-                  {bridge.double && (
-                    <line
-                      x1={x1}
-                      y1={isHorizontal ? y1 + offset : y1}
-                      x2={x2}
-                      y2={isHorizontal ? y2 + offset : y2}
-                      stroke="#22c55e"
-                      strokeWidth="3"
-                      strokeLinecap="round"
-                    />
-                  )}
-                </g>
-              );
-            })}
-          </svg>
+                )}
+              </div>
+            );
+          })}
 
-          {/* Draw islands */}
-          {ISLANDS.map((island) => {
-            const status = getIslandStatus(island);
-            const isSelected = selectedIsland?.id === island.id;
+          {/* Islands */}
+          {ISLANDS.map(island => {
+            const size = 40;
+            const x = island.col * cellSize + cellSize / 2 - size / 2;
+            const y = island.row * cellSize + cellSize / 2 - size / 2;
 
             return (
               <button
                 key={island.id}
-                onClick={() => handleIslandClick(island)}
-                className={`absolute rounded-full w-12 h-12 font-bold text-xl transition-all duration-200 cursor-pointer active:scale-95 ${
-                  isSelected
-                    ? 'bg-blue-500 text-white border-2 border-blue-300 scale-110 z-10'
-                    : status === 'correct'
-                    ? 'bg-green-500/20 text-green-400 border-2 border-green-400'
-                    : status === 'error'
-                    ? 'bg-red-500/20 text-red-400 border-2 border-red-400'
-                    : 'bg-slate-700 text-white hover:bg-slate-600 border-2 border-slate-500'
-                }`}
-                style={{
-                  left: island.col * cellSize + cellSize / 2 - 24,
-                  top: island.row * cellSize + cellSize / 2 - 24,
-                }}
+                onClick={() => handleClick(island.id)}
+                className={`absolute rounded-full flex items-center justify-center text-white font-semibold shadow-md transition ${islandFill(
+                  island.id
+                )}`}
+                style={{ width: size, height: size, left: x, top: y }}
               >
                 {island.required}
               </button>
@@ -156,16 +152,11 @@ export default function BridgesGame() {
         </div>
       </div>
 
-      <div className="text-slate-400 text-sm text-center max-w-md">
-        <p className="mb-2">Click two islands to connect them with bridges</p>
-        <p>Click again to toggle single/double bridges, or click a third time to remove</p>
-      </div>
-
       <button
         onClick={reset}
-        className="px-8 py-3 rounded-lg bg-slate-700/80 hover:bg-slate-600 text-white font-medium transition-all duration-200 hover:scale-105 active:scale-95"
+        className="px-6 py-2 rounded-lg bg-slate-700 hover:bg-slate-600"
       >
-        Reset Puzzle
+        Reset puzzle
       </button>
     </div>
   );

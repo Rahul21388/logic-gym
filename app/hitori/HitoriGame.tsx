@@ -7,7 +7,6 @@ import {
   toggleCell,
   isSolved,
   hasAdjacentShaded,
-  isNoDuplicates,
 } from './hitoriLogic';
 
 export default function HitoriGame() {
@@ -19,32 +18,39 @@ export default function HitoriGame() {
 
   const handleCellClick = (r: number, c: number) => {
     if (solved) return;
-    setCells(toggleCell(cells, r, c));
+    setCells(prev => toggleCell(prev, r, c));
   };
 
-  const getCellStatus = (r: number, c: number): 'correct' | 'error' | 'neutral' => {
+  const getCellStatus = (
+    r: number,
+    c: number
+  ): 'error' | 'neutral' => {
     const state = cells[r][c];
-    
+
     if (state === 'unshaded') {
-      // Check if unshaded cell has duplicates in its row/column
       const value = PUZZLE[r][c];
-      const rowDuplicates = PUZZLE[r].filter((v, ci) => v === value && cells[r][ci] === 'unshaded').length > 1;
-      const colDuplicates = PUZZLE.map((row, ri) => row[c]).filter((v, ri) => v === value && cells[ri][c] === 'unshaded').length > 1;
-      
+      const rowDuplicates =
+        PUZZLE[r].filter(
+          (v, ci) => v === value && cells[r][ci] === 'unshaded'
+        ).length > 1;
+      const colDuplicates =
+        PUZZLE.map(row => row[c]).filter(
+          (v, ri) => v === value && cells[ri][c] === 'unshaded'
+        ).length > 1;
+
       if (rowDuplicates || colDuplicates) {
         return 'error';
       }
       return 'neutral';
     }
-    
+
     if (state === 'shaded') {
-      // Check if shaded cell has adjacent shaded cells
       if (hasAdjacentShaded(cells, r, c)) {
         return 'error';
       }
       return 'neutral';
     }
-    
+
     return 'neutral';
   };
 
@@ -53,14 +59,14 @@ export default function HitoriGame() {
   };
 
   return (
-    <div className="flex flex-col items-center gap-8">
+    <div className="flex flex-col items-center gap-6">
       {solved && (
-        <div className="rounded-xl border-2 border-green-400/50 bg-green-400/10 px-8 py-4 text-green-400 text-lg font-semibold">
-          ✨ Puzzle Solved — Perfect!
+        <div className="rounded-xl border border-green-400/60 bg-green-500/10 px-6 py-3 text-green-300 text-base md:text-lg font-semibold">
+          ✨ Puzzle solved — all rules satisfied!
         </div>
       )}
 
-      <div className="rounded-2xl bg-[#0a1628] p-10 shadow-2xl">
+      <div className="rounded-2xl bg-[#0a1628] p-4 md:p-8 shadow-2xl">
         <div className="grid gap-1">
           {PUZZLE.map((row, r) => (
             <div key={r} className="flex gap-1">
@@ -72,23 +78,23 @@ export default function HitoriGame() {
                   <button
                     key={c}
                     onClick={() => handleCellClick(r, c)}
-                    onContextMenu={(e) => {
+                    onContextMenu={e => {
                       e.preventDefault();
                       handleCellClick(r, c);
                     }}
-                    className={`w-14 h-14 rounded-md font-bold text-xl transition-all duration-200 ${
-                      state === 'shaded'
-                        ? status === 'error'
-                          ? 'bg-red-500/30 text-red-300 border-2 border-red-400'
-                          : 'bg-slate-600/80 text-slate-400'
-                        : state === 'circled'
-                        ? 'bg-blue-500/20 text-blue-300 border-2 border-blue-400'
-                        : status === 'error'
-                        ? 'bg-red-500/20 text-white border-2 border-red-400/50'
-                        : status === 'correct'
-                        ? 'bg-green-500/15 text-white'
-                        : 'bg-slate-800/50 text-white hover:bg-slate-700/70'
-                    } cursor-pointer active:scale-95`}
+                    className={`w-10 h-10 md:w-14 md:h-14 rounded-md font-bold text-lg md:text-xl transition-all duration-200
+                      ${
+                        state === 'shaded'
+                          ? status === 'error'
+                            ? 'bg-red-500/30 text-red-200 border-2 border-red-400'
+                            : 'bg-slate-600/80 text-slate-300'
+                          : state === 'circled'
+                          ? 'bg-blue-500/20 text-blue-300 border-2 border-blue-400'
+                          : status === 'error'
+                          ? 'bg-red-500/20 text-white border-2 border-red-400/60'
+                          : 'bg-slate-800/60 text-white hover:bg-slate-700/80'
+                      }
+                      cursor-pointer active:scale-95`}
                   >
                     {state !== 'shaded' && value}
                   </button>
@@ -99,16 +105,23 @@ export default function HitoriGame() {
         </div>
       </div>
 
-      <div className="text-slate-400 text-sm text-center max-w-md">
-        <p className="mb-2">Click to shade cells. Click again to circle, click once more to clear.</p>
-        <p>Rules: No duplicates in rows/columns (unshaded), no adjacent shaded cells</p>
+      <div className="space-y-1 text-slate-300 text-sm md:text-base text-center max-w-lg">
+        <p>
+          Click a cell to shade it (remove it). Click again to circle it (keep
+          it white). Click a third time to clear your mark.
+        </p>
+        <p>
+          Try to leave exactly one copy of each number in every row and column,
+          with all white cells connected and no black cells touching side by
+          side.
+        </p>
       </div>
 
       <button
         onClick={reset}
-        className="px-8 py-3 rounded-lg bg-slate-700/80 hover:bg-slate-600 text-white font-medium transition-all duration-200 hover:scale-105 active:scale-95"
+        className="px-6 py-2.5 rounded-lg bg-slate-700/80 hover:bg-slate-600 text-white text-sm md:text-base font-medium transition-all duration-200 hover:scale-105 active:scale-95"
       >
-        Reset Puzzle
+        Reset puzzle
       </button>
     </div>
   );

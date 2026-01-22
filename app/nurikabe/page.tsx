@@ -1,304 +1,115 @@
-'use client';
-
-import { useState } from 'react';
+// page.tsx
 import Link from 'next/link';
-
-type Cell = 'empty' | 'black' | 'white';
-
-const SIZE = 5;
-
-/* ---------- SAFE PUZZLE SET (ALL SOLVABLE) ---------- */
-const PUZZLES: (number | null)[][][] = [
-  [
-    [1, null, null, 2, null],
-    [null, null, null, null, null],
-    [null, 3, null, null, null],
-    [null, null, null, null, null],
-    [null, null, 1, null, null],
-  ],
-  [
-    [null, 2, null, null, 1],
-    [null, null, null, null, null],
-    [3, null, null, null, null],
-    [null, null, null, null, null],
-    [1, null, null, 2, null],
-  ],
-  [
-    [null, null, 3, null, null],
-    [null, null, null, null, null],
-    [2, null, null, null, 1],
-    [null, null, null, null, null],
-    [null, 1, null, 2, null],
-  ],
-];
-
-function randomPuzzle() {
-  return PUZZLES[Math.floor(Math.random() * PUZZLES.length)];
-}
+import NurikabeGame from './NurikabeGame';
 
 export default function NurikabePage() {
-  const [puzzle, setPuzzle] = useState(() => randomPuzzle());
-  const [grid, setGrid] = useState<Cell[][]>(
-    Array.from({ length: SIZE }, () =>
-      Array.from({ length: SIZE }, () => 'empty')
-    )
-  );
-
-  function toggle(r: number, c: number) {
-    if (puzzle[r][c]) return;
-
-    setGrid(prev => {
-      const copy = prev.map(row => [...row]);
-      copy[r][c] =
-        prev[r][c] === 'empty'
-          ? 'black'
-          : prev[r][c] === 'black'
-          ? 'white'
-          : 'empty';
-      return copy;
-    });
-  }
-
-  function reset() {
-    setPuzzle(randomPuzzle());
-    setGrid(
-      Array.from({ length: SIZE }, () =>
-        Array.from({ length: SIZE }, () => 'empty')
-      )
-    );
-  }
-
-  /* ---------- HELPERS ---------- */
-
-  function neighbors(r: number, c: number) {
-    return [
-      [r - 1, c],
-      [r + 1, c],
-      [r, c - 1],
-      [r, c + 1],
-    ].filter(([nr, nc]) => nr >= 0 && nc >= 0 && nr < SIZE && nc < SIZE);
-  }
-
-  function flood(
-    r: number,
-    c: number,
-    visited: boolean[][],
-    match: (r: number, c: number) => boolean
-  ): [number, [number, number][]] {
-    const stack = [[r, c]];
-    const cells: [number, number][] = [];
-    visited[r][c] = true;
-
-    while (stack.length) {
-      const [cr, cc] = stack.pop()!;
-      cells.push([cr, cc]);
-
-      for (const [nr, nc] of neighbors(cr, cc)) {
-        if (!visited[nr][nc] && match(nr, nc)) {
-          visited[nr][nc] = true;
-          stack.push([nr, nc]);
-        }
-      }
-    }
-
-    return [cells.length, cells];
-  }
-
-  /* ---------- VALIDATION ---------- */
-
-  const invalid = new Set<string>();
-
-  function mark(r: number, c: number) {
-    invalid.add(`${r}-${c}`);
-  }
-
-  function check2x2Black() {
-    for (let r = 0; r < SIZE - 1; r++) {
-      for (let c = 0; c < SIZE - 1; c++) {
-        const cells = [
-          [r, c],
-          [r + 1, c],
-          [r, c + 1],
-          [r + 1, c + 1],
-        ];
-        if (cells.every(([rr, cc]) => grid[rr][cc] === 'black')) {
-          cells.forEach(([rr, cc]) => mark(rr, cc));
-        }
-      }
-    }
-  }
-
-  function checkIslands() {
-    const visited = Array.from({ length: SIZE }, () =>
-      Array(SIZE).fill(false)
-    );
-
-    for (let r = 0; r < SIZE; r++) {
-      for (let c = 0; c < SIZE; c++) {
-        if (puzzle[r][c]) {
-          const [count, cells] = flood(
-            r,
-            c,
-            visited,
-            (rr, cc) => grid[rr][cc] !== 'black'
-          );
-          if (count !== puzzle[r][c]) {
-            cells.forEach(([rr, cc]) => mark(rr, cc));
-          }
-        }
-      }
-    }
-  }
-
-  function checkBlackConnectivity() {
-    const visited = Array.from({ length: SIZE }, () =>
-      Array(SIZE).fill(false)
-    );
-
-    let start: [number, number] | null = null;
-    const blacks: [number, number][] = [];
-
-
-    for (let r = 0; r < SIZE; r++) {
-      for (let c = 0; c < SIZE; c++) {
-        if (grid[r][c] === 'black') {
-          blacks.push([r, c]);
-          if (!start) start = [r, c];
-        }
-      }
-    }
-
-    if (!start || blacks.length === 0) return;
-
-    const [, connected] = flood(
-      start[0],
-      start[1],
-      visited,
-      (r, c) => grid[r][c] === 'black'
-    );
-
-    if (connected.length !== blacks.length) {
-      blacks.forEach(([r, c]) => mark(r, c));
-    }
-  }
-
-  function solved() {
-    invalid.clear();
-    check2x2Black();
-    checkIslands();
-    checkBlackConnectivity();
-
-    return (
-      invalid.size === 0 &&
-      grid.every(row => row.every(c => c !== 'empty'))
-    );
-  }
-
-  const isSolved = solved();
-
-  /* ---------- UI ---------- */
-
   return (
-    <main style={styles.page}>
-      <header>
-        <Link href="/" style={styles.back}>
-          ← Back to Home
-        </Link>
-        <h1>Nurikabe</h1>
-        <p style={styles.subtitle}>
-          Shade black cells so islands match numbers.
-        </p>
-      </header>
+    <main className="min-h-screen bg-[#050d1a] text-white px-4 md:px-10 py-8">
+      <Link
+        href="/"
+        className="mb-8 inline-flex items-center gap-2 text-green-400 hover:text-green-300 transition-colors duration-200"
+      >
+        <span>←</span>
+        <span>Back to home</span>
+      </Link>
 
-      <section style={styles.board}>
-        {puzzle.map((row, r) =>
-          row.map((cell, c) => {
-            const key = `${r}-${c}`;
-            const error = invalid.has(key);
+      <div className="mx-auto max-w-6xl space-y-10">
+        {/* Header */}
+        <header className="space-y-3">
+          <h1 className="text-3xl md:text-5xl font-bold text-green-400">
+            Nurikabe
+          </h1>
+          <p className="text-slate-300 text-base md:text-lg max-w-2xl">
+            Build islands and seas on a grid. Numbered cells show the size of
+            each island. The black cells form a single sea with no 2×2 pools.
+          </p>
+        </header>
 
-            return (
-              <button
-                key={key}
-                onClick={() => toggle(r, c)}
-                style={{
-                  ...styles.cell,
-                  background:
-                    grid[r][c] === 'black'
-                      ? '#000'
-                      : grid[r][c] === 'white'
-                      ? '#e5e7eb'
-                      : '#1f2937',
-                  color: grid[r][c] === 'black' ? '#000' : '#fff',
-                  boxShadow: isSolved
-                    ? '0 0 12px #22c55e'
-                    : error
-                    ? '0 0 12px #ef4444'
-                    : 'none',
-                }}
-              >
-                {cell ?? ''}
-              </button>
-            );
-          })
-        )}
-      </section>
+        <section className="grid gap-10 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] items-start">
+          {/* Game */}
+          <div className="flex justify-center">
+            <NurikabeGame />
+          </div>
 
-      <div style={styles.status}>
-        {isSolved ? '🎉 Puzzle Solved!' : 'Fix highlighted cells'}
+          {/* Explanation */}
+          <aside className="space-y-6 rounded-2xl bg-[#071022] p-5 md:p-7 border border-slate-800/80">
+            <div className="space-y-2">
+              <h2 className="text-xl font-semibold text-green-300">
+                What is Nurikabe?
+              </h2>
+              <p className="text-slate-300 text-sm md:text-base">
+                Nurikabe is a Japanese logic puzzle about islands and sea. The
+                numbered cells are islands, and the black cells form the sea.
+                Each number tells you how many white cells belong to that island.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <h3 className="text-lg font-semibold text-green-300">
+                How to play
+              </h3>
+              <ol className="list-decimal list-inside space-y-1.5 text-slate-200 text-sm md:text-base">
+                <li>
+                  Each number is part of a white island of exactly that many
+                  orthogonally connected white cells.
+                </li>
+                <li>
+                  Every island contains exactly one number; islands cannot touch
+                  horizontally or vertically (only diagonally).
+                </li>
+                <li>
+                  Black cells form the sea. All black cells must be connected in
+                  one group, with no 2×2 block of black cells.
+                </li>
+                <li>
+                  When all islands and sea rules are satisfied, the puzzle is
+                  solved.
+                </li>
+              </ol>
+            </div>
+
+            <div className="space-y-2">
+              <h3 className="text-lg font-semibold text-green-300">
+                Controls
+              </h3>
+              <ul className="list-disc list-inside space-y-1.5 text-slate-200 text-sm md:text-base">
+                <li>
+                  Click an empty cell to cycle: unknown → black (sea) → white
+                  (island) → unknown.
+                </li>
+                <li>
+                  Numbered cells are fixed white cells (island cores) and cannot
+                  be changed.
+                </li>
+                <li>
+                  Red outlines highlight sea errors; amber outlines highlight
+                  island issues while you experiment.
+                </li>
+              </ul>
+            </div>
+
+            <div className="space-y-2">
+              <h3 className="text-lg font-semibold text-green-300">
+                Beginner tips
+              </h3>
+              <ul className="list-disc list-inside space-y-1.5 text-slate-200 text-sm md:text-base">
+                <li>
+                  Large numbers usually force several neighbours to be white to
+                  reach the required island size.
+                </li>
+                <li>
+                  Whenever a 2×2 block of potential black cells appears, at
+                  least one of them must stay white.
+                </li>
+                <li>
+                  Use the connectivity rule: avoid cutting the sea into
+                  separated lakes as you mark black cells.
+                </li>
+              </ul>
+            </div>
+          </aside>
+        </section>
       </div>
-
-      <button style={styles.reset} onClick={reset}>
-        New Puzzle
-      </button>
     </main>
   );
 }
-
-/* ---------- STYLES ---------- */
-
-const styles: Record<string, React.CSSProperties> = {
-  page: {
-    minHeight: '100vh',
-    padding: '40px',
-    background: 'radial-gradient(circle at top, #020617, #000)',
-    color: '#fff',
-  },
-  back: {
-    color: '#4ade80',
-    textDecoration: 'none',
-    fontSize: '14px',
-  },
-  subtitle: {
-    opacity: 0.7,
-    fontSize: '14px',
-  },
-  board: {
-    display: 'grid',
-    gridTemplateColumns: `repeat(${SIZE}, 60px)`,
-    gap: '10px',
-    marginTop: '30px',
-  },
-  cell: {
-    width: '60px',
-    height: '60px',
-    borderRadius: '12px',
-    border: '1px solid #334155',
-    fontSize: '20px',
-    fontWeight: 700,
-    cursor: 'pointer',
-    transition: 'box-shadow 0.2s',
-  },
-  status: {
-    marginTop: '20px',
-    fontSize: '14px',
-  },
-  reset: {
-    marginTop: '16px',
-    padding: '10px 16px',
-    borderRadius: '10px',
-    background: '#22c55e',
-    border: 'none',
-    cursor: 'pointer',
-    fontWeight: 600,
-  },
-};
