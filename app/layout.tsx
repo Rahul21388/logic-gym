@@ -1,5 +1,6 @@
 import "./globals.css";
 import type { Metadata } from "next";
+import RegisterSW from "./register-sw";
 
 export const metadata: Metadata = {
   title: {
@@ -20,13 +21,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        {/* ✅ Explicit PWA manifest link (required for Chrome detection) */}
         <link rel="manifest" href="/manifest.json" />
-
-        {/* Optional but recommended */}
         <meta name="theme-color" content="#00e676" />
       </head>
-      <body>{children}</body>
+      <body>
+        <RegisterSW />
+        {children}
+      </body>
     </html>
   );
 }
