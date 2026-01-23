@@ -19,6 +19,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        {/* ✅ Explicit PWA manifest link (required for Chrome detection) */}
+        <link rel="manifest" href="/manifest.json" />
+
+        {/* Optional but recommended */}
+        <meta name="theme-color" content="#00e676" />
+      </head>
       <body>{children}</body>
     </html>
   );
